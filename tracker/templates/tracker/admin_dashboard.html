@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="text-center mb-4" style="color:#1976d2;">Admin Dashboard</h1>
+  <div class="row justify-content-center align-items-stretch g-3 mb-4">
+    <div class="col-auto">
+      <div class="card shadow-sm border-0 text-center h-100">
+        <div class="card-body py-2 px-3">
+          <div class="fw-bold" style="font-size:1.5rem">{{ total_apps }}</div>
+          <div class="text-muted">Total Apps</div>
+        </div>
+      </div>
+    </div>
+    {% for stage, count in stage_counts_list %}
+    <div class="col-auto">
+      <div class="card shadow-sm border-0 text-center h-100">
+        <div class="card-body py-2 px-3">
+          <div class="fw-bold">{{ count }}</div>
+          <div class="text-muted">{{ stage|title }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    <div class="col-auto">
+      <div class="card shadow-sm border-0 text-center h-100">
+        <div class="card-body py-2 px-3">
+          <div class="fw-bold text-danger">{{ delayed_in_design|default:0 }}</div>
+          <div class="text-muted">Delayed In Design (&gt;3d)</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-auto">
+      <div class="card shadow-sm border-0 text-center h-100">
+        <div class="card-body py-2 px-3">
+          <div class="fw-bold text-danger">{{ delayed_gis|default:0 }}</div>
+          <div class="text-muted">Delayed GIS (&gt;3d)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="mb-3">App Stages Breakdown</h5>
+      <canvas id="stageChart" height="120"></canvas>
+    </div>
+  </div>
+  <div class="text-center">
+    <button class="btn btn-primary" disabled>Download Full Report (coming soon)</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('stageChart').getContext('2d');
+const stageChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ stage_labels|safe }},
+        datasets: [{
+            label: 'Number of Apps',
+            data: {{ stage_values|safe }},
+            backgroundColor: '#1976d2',
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+        }
+    }
+});
+</script>
+{% endblock %}

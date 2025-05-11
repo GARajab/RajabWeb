@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Apps</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        /* Consistent pagination button height */
+        .dataTables_paginate .pagination .page-item .page-link {
+            height: 38px;
+            min-width: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 0;
+            padding-bottom: 0;
+            font-size: 1rem;
+        }
+
+        .delayed-row {
+            background: #ffe5e5 !important;
+            color: #b71c1c !important;
+        }
+
+        /* Force DataTables export buttons to use Bootstrap primary color */
+        .dt-button.btn-primary, .dt-buttons .btn-primary {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+            color: #fff !important;
+        }
+        .dt-button.btn-primary:hover, .dt-buttons .btn-primary:hover,
+        .dt-button.btn-primary:focus, .dt-buttons .btn-primary:focus {
+            background-color: #0b5ed7 !important;
+            border-color: #0a58ca !important;
+            color: #fff !important;
+        }
+        .dt-button.btn-primary:active, .dt-buttons .btn-primary:active {
+            background-color: #0a58ca !important;
+            border-color: #0a58ca !important;
+            color: #fff !important;
+        }
+
+
+        body { background: #f8fafc; }
+        .container { margin-top: 40px; }
+        .card { border-radius: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .table { border-radius: 12px; overflow: hidden; background: #fff; }
+        .table thead { background: #1976d2; color: #fff; }
+        .table th, .table td { vertical-align: middle; }
+        .stage-passed { background: #e8f5e9; }
+        .stage-wayleave { background: #fffde7; }
+        .stage-in_design { background: #e3f2fd; }
+        .stage-usp { background: #ffebee; }
+        .icon-btn { border: none; background: none; color: #1976d2; padding: 4px 8px; border-radius: 50%; transition: background 0.2s; }
+        .icon-btn:hover { background: #e3f2fd; color: #0d47a1; }
+        .icon-btn.delete { color: #d32f2f; }
+        .icon-btn.delete:hover { background: #ffebee; color: #b71c1c; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mb-4">Apps Dashboard</h1>
+    <div aria-live="polite" aria-atomic="true" class="position-relative">
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+            {% for msg in messages %}
+            <div class="toast align-items-center text-bg-{{ msg.tags }} border-0 fade" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000" data-bs-autohide="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        {{ msg }}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery and DataTables -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.colVis.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var toastEl = document.getElementById('msgToast');
+            if (toastEl) {
+                var toast = new bootstrap.Toast(toastEl, {delay: 5000});
+                toast.show();
+            }
+        });
+    </script>
+    <div class="card mb-4">
+      <div class="card-body">
+        <form id="excelUploadForm" method="post" enctype="multipart/form-data" class="d-flex flex-column align-items-center gap-3">
+            {% csrf_token %}
+            <label for="excelDropZone" class="form-label w-100">Upload Excel File</label>
+            <div id="excelDropZone" class="border border-2 border-primary rounded-3 p-4 w-100 text-center bg-light drag-area" style="cursor:pointer; transition:background 0.2s;">
+                <span class="material-icons" style="font-size:2.5rem;color:#1976d2;">cloud_upload</span>
+                <div id="dropText">Drag & Drop Excel file here, or click to select</div>
+                <input type="file" name="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="form-control d-none">
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Upload Excel</button>
+        </form>
+      </div>
+    </div>
+    <script>
+    // Drag and drop logic
+    const dropZone = document.getElementById('excelDropZone');
+    const fileInput = document.getElementById('excelFileInput');
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('bg-primary', 'text-white');
+        dropZone.classList.remove('bg-light');
+        document.getElementById('dropText').textContent = 'Release to upload';
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('bg-primary', 'text-white');
+        dropZone.classList.add('bg-light');
+        document.getElementById('dropText').textContent = 'Drag & Drop Excel file here, or click to select';
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('bg-primary', 'text-white');
+        dropZone.classList.add('bg-light');
+        document.getElementById('dropText').textContent = 'Drag & Drop Excel file here, or click to select';
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+        }
+    });
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length > 0) {
+            document.getElementById('dropText').textContent = fileInput.files[0].name;
+        } else {
+            document.getElementById('dropText').textContent = 'Drag & Drop Excel file here, or click to select';
+        }
+    });
+    </script>
+    <div class="card">
+      <div class="mb-4">
+        <h2 class="fw-bold mb-3 text-center" style="color:#1976d2;">Weekly Apps</h2>
+        <div class="row g-3 justify-content-center align-items-stretch">
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold" style="font-size:1.5rem">{{ total_apps }}</div>
+                <div class="text-muted">Total Apps</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold text-primary">{{ stage_counts.in_design|default:0 }}</div>
+                <div class="text-muted">In Design</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold text-info">{{ stage_counts.gis|default:0 }}</div>
+                <div class="text-muted">GIS</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold text-success">{{ stage_counts.passed|default:0 }}</div>
+                <div class="text-muted">Passed</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold text-warning">{{ stage_counts.wayleave|default:0 }}</div>
+                <div class="text-muted">Wayleave</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold text-danger">{{ stage_counts.usp|default:0 }}</div>
+                <div class="text-muted">USP</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold text-danger">{{ delayed_in_design|default:0 }}</div>
+                <div class="text-muted">Delayed In Design (&gt;3d)</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="card shadow-sm border-0 text-center h-100">
+              <div class="card-body py-2 px-3">
+                <div class="fw-bold text-danger">{{ delayed_gis|default:0 }}</div>
+                <div class="text-muted">Delayed GIS (&gt;3d)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ... rest of the dashboard ... -->
+      <div class="card-header d-flex justify-content-between align-items-center bg-white border-0 pb-0">
+        <h5 class="mb-0 fw-semibold" style="color:#1976d2;">Apps List</h5>
+        <div id="appsTableBtns"></div>
+      </div>
+      <div class="card-body">
+        <table id="appsTable" class="table table-hover align-middle mb-0">
+        <thead>
+        <tr>
+            <th style="width:50px">No.</th>
+            <th>App Name</th>
+            <th>Customer</th>
+            <th>Wayleave</th>
+            <th>In Design</th>
+            <th>USP</th>
+            <th>Passed</th>
+            <th>Status</th>
+            <th>Remarks</th>
+            <th class="text-center">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {# Delayed apps first #}
+        {% for app in apps %}
+            {% if app.id|stringformat:'s' in delayed_app_ids %}
+            <tr class="delayed-row stage-{{ app.current_stage|slugify }}" data-app-id="{{ app.id }}">
+                <td></td>
+                <td>{{ app.app_name }}</td>
+                <td>{{ app.customer }}</td>
+                <td>{{ app.wayleave_date|date:'Y-m-d' }}</td>
+                <td>{{ app.in_design_date|date:'Y-m-d' }}</td>
+                <td>{{ app.usp_date|date:'Y-m-d' }}</td>
+                <td>{{ app.passed_date|date:'Y-m-d' }}</td>
+                <td>{{ app.current_stage|title }}</td>
+                <td>{{ app.remarks }}</td>
+                <td class="text-center">
+                    <button class="icon-btn edit-btn" data-app-id="{{ app.id }}" title="Edit">
+                        <span class="material-icons">edit</span>
+                    </button>
+                    <button class="icon-btn delete-btn delete" data-app-id="{{ app.id }}" title="Delete">
+                        <span class="material-icons">delete</span>
+                    </button>
+                </td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+        {# Non-delayed apps #}
+        {% for app in apps %}
+            {% if not app.id|stringformat:'s' in delayed_app_ids %}
+            <tr class="stage-{{ app.current_stage|slugify }}" data-app-id="{{ app.id }}">
+                <td></td>
+                <td>{{ app.app_name }}</td>
+                <td>{{ app.customer }}</td>
+                <td>{{ app.wayleave_date|date:'Y-m-d' }}</td>
+                <td>{{ app.in_design_date|date:'Y-m-d' }}</td>
+                <td>{{ app.usp_date|date:'Y-m-d' }}</td>
+                <td>{{ app.passed_date|date:'Y-m-d' }}</td>
+                <td>{{ app.current_stage|title }}</td>
+                <td>{{ app.remarks }}</td>
+                <td class="text-center">
+                    <button class="icon-btn edit-btn" data-app-id="{{ app.id }}" title="Edit">
+                        <span class="material-icons">edit</span>
+                    </button>
+                    <button class="icon-btn delete-btn delete" data-app-id="{{ app.id }}" title="Delete">
+                        <span class="material-icons">delete</span>
+                    </button>
+                </td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+        {% if apps|length == 0 %}
+            <tr><td colspan="11" class="text-center">No apps found.</td></tr>
+        {% endif %}
+        </tbody>
+        </table>
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form id="editForm">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="editModalLabel">Edit App</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" name="app_id" id="editAppId">
+                  <div class="mb-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="current_stage" id="editCurrentStage" required>
+                      <option value="wayleave">Wayleave</option>
+                      <option value="in_design">In Design</option>
+                      <option value="usp">USP</option>
+                      <option value="passed">Passed</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Wayleave Date</label>
+                    <input type="date" class="form-control" name="wayleave_date" id="editWayleaveDate">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">In Design Date</label>
+                    <input type="date" class="form-control" name="in_design_date" id="editInDesignDate">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">USP Date</label>
+                    <input type="date" class="form-control" name="usp_date" id="editUSPDate">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Passed Date</label>
+                    <input type="date" class="form-control" name="passed_date" id="editPassedDate">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Remarks</label>
+                    <input type="text" class="form-control" name="remarks" id="editRemarks">
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                Are you sure you want to delete this app?
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Yes, Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <script>
+        $(document).ready(function() {
+            var table = $('#appsTable').DataTable({
+                dom: '<"row align-items-center"<"col-auto"B><"col"l><"col"f>>rtip',
+                buttons: [
+                    {
+                        extend: 'csv',
+                        className: 'btn btn-primary btn-sm me-1',
+                        text: '<span class="material-icons" style="vertical-align:middle">download</span> Export CSV',
+                        titleAttr: 'Export CSV'
+                    },
+                    {
+                        extend: 'excel',
+                        className: 'btn btn-primary btn-sm me-1',
+                        text: '<span class="material-icons" style="vertical-align:middle">table_view</span> Excel',
+                        titleAttr: 'Export Excel'
+                    },
+                    {
+                        extend: 'print',
+                        className: 'btn btn-primary btn-sm me-1',
+                        text: '<span class="material-icons" style="vertical-align:middle">print</span> Print',
+                        titleAttr: 'Print'
+                    },
+                    {
+                        extend: 'colvis',
+                        className: 'btn btn-primary btn-sm me-1',
+                        text: '<span class="material-icons" style="vertical-align:middle">view_column</span> Columns',
+                        titleAttr: 'Column Visibility'
+                    }
+                ],
+                lengthMenu: [[10, 20, 50, 100], [10, 20, 50, 100]],
+                pageLength: 10,
+                responsive: true,
+                language: {
+                    search: '',
+                    searchPlaceholder: 'Search... ',
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    paginate: {
+                        previous: "<span class='material-icons'>chevron_left</span>",
+                        next: "<span class='material-icons'>chevron_right</span>"
+                    }
+                },
+                columnDefs: [
+                    { orderable: false, targets: -1 }
+                ]
+            });
+            table.buttons().container().appendTo('#appsTableBtns');
+            // Style search box
+            $(table.table().container()).find('div.dataTables_filter input').addClass('form-control form-control-sm ms-2').css({'display':'inline-block','width':'auto','margin-left':'8px'});
+            // Add serial number
+            table.on('order.dt search.dt draw.dt', function() {
+                let pageInfo = table.page.info();
+                table.column(0, {search:'applied', order:'applied', page:'current'}).nodes().each(function(cell, i) {
+                    cell.innerHTML = pageInfo.start + i + 1;
+                });
+            }).draw();
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show all toasts with fade/auto-hide
+            document.querySelectorAll('.toast').forEach(function(el) {
+                var toast = new bootstrap.Toast(el);
+                toast.show();
+            });
+            // Helper to show a toast
+            function showToast(message, type) {
+                var container = document.querySelector('.toast-container');
+                var toastDiv = document.createElement('div');
+                toastDiv.className = `toast align-items-center text-bg-${type||'info'} border-0 fade`;
+                toastDiv.setAttribute('role', 'alert');
+                toastDiv.setAttribute('aria-live', 'assertive');
+                toastDiv.setAttribute('aria-atomic', 'true');
+                toastDiv.setAttribute('data-bs-delay', '4000');
+                toastDiv.setAttribute('data-bs-autohide', 'true');
+                toastDiv.innerHTML = `<div class='d-flex'><div class='toast-body'>${message}</div><button type='button' class='btn-close btn-close-white me-2 m-auto' data-bs-dismiss='toast' aria-label='Close'></button></div>`;
+                container.appendChild(toastDiv);
+                var toast = new bootstrap.Toast(toastDiv);
+                toast.show();
+                toastDiv.addEventListener('hidden.bs.toast', function(){ toastDiv.remove(); });
+            }
+
+            // Edit button click
+            document.querySelectorAll('.edit-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var appId = this.getAttribute('data-app-id');
+                    fetch(`/edit/${appId}/`)
+                        .then(res => res.json())
+                        .then(data => {
+                            document.getElementById('editAppId').value = appId;
+                            document.getElementById('editCurrentStage').value = data.current_stage;
+                            document.getElementById('editWayleaveDate').value = data.wayleave_date;
+                            document.getElementById('editInDesignDate').value = data.in_design_date;
+                            document.getElementById('editUSPDate').value = data.usp_date;
+                            document.getElementById('editPassedDate').value = data.passed_date;
+                            document.getElementById('editRemarks').value = data.remarks;
+                            var modal = new bootstrap.Modal(document.getElementById('editModal'));
+                            modal.show();
+                        });
+                });
+            });
+            // Edit form submit
+            document.getElementById('editForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var appId = document.getElementById('editAppId').value;
+                var formData = new FormData(this);
+                fetch(`/edit/${appId}/`, {
+                    method: 'POST',
+                    body: formData
+                }).then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('App updated successfully!', 'success');
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        showToast('Update failed: ' + (data.error || 'Unknown error'), 'danger');
+                    }
+                });
+            });
+            // Delete modal logic
+            let deleteAppId = null;
+            document.querySelectorAll('.delete-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    deleteAppId = this.getAttribute('data-app-id');
+                    var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                    modal.show();
+                });
+            });
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                if (!deleteAppId) return;
+                fetch(`/delete/${deleteAppId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                }).then(res => res.json())
+                .then(data => {
+                    var modalEl = document.getElementById('deleteModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+                    if (data.success) {
+                        showToast('App deleted.', 'success');
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        showToast('Delete failed: ' + (data.error || 'Unknown error'), 'danger');
+                    }
+                });
+            });
+        });
+        </script>
+      </div>
+    </div>
+</div>
+</body>
+</html>
+

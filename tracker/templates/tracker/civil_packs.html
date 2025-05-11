@@ -1,0 +1,312 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+<!-- DataTables + Bootstrap 5 CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+
+{% block content %}
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-12 col-lg-8 mx-auto" style="width:auto;">
+      <div class="d-flex align-items-center mb-3">
+        <span class="material-icons me-2" style="font-size:2rem;color:#1976d2;">engineering</span>
+        <h2 class="mb-0 fw-bold" style="color:#1976d2;">Civil Packs</h2>
+      </div>
+      {% if message %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endif %}
+      <div class="d-flex justify-content-end mb-4">
+  <button class="btn btn-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#civilPackModal">
+    <span class="material-icons align-middle me-1">add_circle</span> Add Civil Pack
+  </button>
+</div>
+<!-- Modal for Add Civil Pack -->
+<div class="modal fade" id="civilPackModal" tabindex="-1" aria-labelledby="civilPackModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="civilPackModalLabel">Add New Civil Pack</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="civilPackForm" method="post" autocomplete="off">
+  {% csrf_token %}
+  <div class="row g-3 flex-column">
+    <div class="col-12"><label class="form-label">SS Number</label><input type="text" class="form-control" id="add_ss_number" name="ss_number" required></div>
+    <div class="col-12"><label class="form-label">Substation Number</label><input type="text" class="form-control" id="add_substation_number" name="substation_number"></div>
+    <div class="col-12"><label class="form-label">Job Code</label><input type="text" class="form-control" id="add_job_code" name="job_code"></div>
+    <div class="col-12"><label class="form-label">Scheme Reference</label><input type="text" class="form-control" id="add_scheme_reference" name="scheme_reference"></div>
+    <div class="col-12"><label class="form-label">Wayleave Number</label><input type="text" class="form-control" id="add_wayleave_number" name="wayleave_number"></div>
+    <div class="col-12"><label class="form-label">Passed Date</label><input type="date" class="form-control" id="add_passed_date" name="passed_date"></div>
+    <div class="col-12"><label class="form-label">Road Level Number</label><input type="text" class="form-control" id="add_road_level_number" name="road_level_number"></div>
+    <div class="col-12"><label class="form-label">Plot Number</label><input type="text" class="form-control" id="add_plot_number" name="plot_number"></div>
+    <div class="col-12"><label class="form-label">Substation TX Count</label><input type="text" class="form-control" id="add_substation_tx_count" name="substation_tx_count"></div>
+    <div class="col-12"><label class="form-label">Way LVB Count</label><input type="text" class="form-control" id="add_waylvb_count" name="waylvb_count"></div>
+    <div class="col-12"><label class="form-label">TX Size</label><input type="text" class="form-control" id="add_tx_size" name="tx_size"></div>
+  </div>
+  <div class="mt-4 text-end">
+    <button type="submit" class="btn btn-primary">Add Civil Pack</button>
+  </div>
+</form>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="container py-5" style="background:#f4f7fb; margin:0; padding:0;">
+  <div class="d-flex justify-content-center" style="width:fit-content; margin-left:-120px;">
+    <div class="card shadow-lg border-0 my-5 w-100 mx-auto p-0" style="border-radius:1.2rem; background:#f8f9fa; width:100%; margin-left:0; margin-right:0;">
+          <div class="card-header bg-white border-0 pb-2 d-flex align-items-center justify-content-between" style="border-radius:1.2rem 1.2rem 0 0;">
+            <h5 class="fw-semibold mb-0" style="color:#1976d2;">All Civil Packs</h5>
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-success btn-sm" href="/civil-packs/export/" download>
+                <span class="material-icons align-middle" style="font-size:1.2rem;">download</span> Export
+              </a>
+            </div>
+          </div>
+          <div class="card-body p-4" style="background:#fff; border-radius:0 0 1.2rem 1.2rem;">
+            <table id="civilPackTable" class="table table-bordered table-striped table-hover align-middle" style="background:#fff;">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-nowrap">SS Number</th>
+                  <th class="text-nowrap">Substation Number</th>
+                  <th class="text-nowrap">Job Code</th>
+                  <th class="text-nowrap">Scheme Reference</th>
+                  <th class="text-nowrap">Wayleave Number</th>
+                  <th class="text-nowrap">Passed Date</th>
+                  <th class="text-nowrap">Road Level Number</th>
+                  <th class="text-nowrap">Plot Number</th>
+                  <th class="text-nowrap">Substation TX Count</th>
+                  <th class="text-nowrap">Way LVB Count</th>
+                  <th class="text-nowrap">TX Size</th>
+                  <th class="text-nowrap text-center">Edit</th>
+                </tr>
+              </thead>
+              <tbody id="civilPackTableBody">
+                {% for pack in packs %}
+                <tr>
+                  <td class="text-nowrap">{{ pack.ss_number }}</td>
+                  <td class="text-nowrap">{{ pack.substation_number }}</td>
+                  <td class="text-nowrap">{{ pack.job_code }}</td>
+                  <td class="text-nowrap">{{ pack.scheme_reference }}</td>
+                  <td class="text-nowrap">{{ pack.wayleave_number }}</td>
+                  <td class="text-nowrap">{{ pack.passed_date|date:'Y-m-d' }}</td>
+                  <td class="text-nowrap">{{ pack.road_level_number }}</td>
+                  <td class="text-nowrap">{{ pack.plot_number }}</td>
+                  <td class="text-nowrap">{{ pack.substation_tx_count }}</td>
+                  <td class="text-nowrap">{{ pack.waylvb_count }}</td>
+                  <td class="text-nowrap">{{ pack.tx_size }}</td>
+                  <td class="text-center">
+  <button class="btn btn-outline-secondary btn-sm edit-btn" data-pack-id="{{ pack.id|stringformat:'s' }}" data-bs-toggle="modal" data-bs-target="#editCivilPackModal" title="Edit">
+    <span class="material-icons-outlined" style="font-size:1.2rem;" aria-hidden="true">edit</span>
+  </button>
+</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12" class="text-center">No Civil Packs found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <!-- Pagination -->
+            <nav class="d-flex justify-content-center mt-4">
+              <ul class="pagination">
+                <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                <li class="page-item active"><span class="page-link">1</span></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+<!-- Edit Civil Pack Modal -->
+<div class="modal fade" id="editCivilPackModal" tabindex="-1" aria-labelledby="editCivilPackModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editCivilPackModalLabel">Edit Civil Pack</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editCivilPackForm" autocomplete="off">
+          <input type="hidden" id="edit_pack_id" name="pack_id">
+          <div class="row g-3 flex-column">
+            <div class="col-12"><label class="form-label">SS Number</label><input type="text" class="form-control" id="edit_ss_number" name="ss_number"></div>
+            <div class="col-12"><label class="form-label">Substation Number</label><input type="text" class="form-control" id="edit_substation_number" name="substation_number"></div>
+            <div class="col-12"><label class="form-label">Job Code</label><input type="text" class="form-control" id="edit_job_code" name="job_code"></div>
+            <div class="col-12"><label class="form-label">Scheme Reference</label><input type="text" class="form-control" id="edit_scheme_reference" name="scheme_reference"></div>
+            <div class="col-12"><label class="form-label">Wayleave Number</label><input type="text" class="form-control" id="edit_wayleave_number" name="wayleave_number"></div>
+            <div class="col-12"><label class="form-label">Passed Date</label><input type="date" class="form-control" id="edit_passed_date" name="passed_date"></div>
+            <div class="col-12"><label class="form-label">Road Level Number</label><input type="text" class="form-control" id="edit_road_level_number" name="road_level_number"></div>
+            <div class="col-12"><label class="form-label">Plot Number</label><input type="text" class="form-control" id="edit_plot_number" name="plot_number"></div>
+            <div class="col-12"><label class="form-label">Substation TX Count</label><input type="text" class="form-control" id="edit_substation_tx_count" name="substation_tx_count"></div>
+            <div class="col-12"><label class="form-label">Way LVB Count</label><input type="text" class="form-control" id="edit_waylvb_count" name="waylvb_count"></div>
+            <div class="col-12"><label class="form-label">TX Size</label><input type="text" class="form-control" id="edit_tx_size" name="tx_size"></div>
+          </div>
+          <div class="mt-4 text-end">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function attachEditBtnHandlers() {
+  document.querySelectorAll('.edit-btn').forEach(function(btn) {
+    if (!btn.hasAttribute('data-edit-attached')) {
+      btn.setAttribute('data-edit-attached', 'true');
+      btn.addEventListener('click', function() {
+        const packId = btn.getAttribute('data-pack-id');
+        let url = '/civil-packs/edit/' + packId + '/';
+        console.log('Edit fetch URL:', url);
+        fetch(url, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Edit fetch response:', data);
+          document.getElementById('edit_pack_id').value = packId;
+          document.getElementById('edit_ss_number').value = data.ss_number || '';
+          document.getElementById('edit_substation_number').value = data.substation_number || '';
+          document.getElementById('edit_job_code').value = data.job_code || '';
+          document.getElementById('edit_scheme_reference').value = data.scheme_reference || '';
+          document.getElementById('edit_wayleave_number').value = data.wayleave_number || '';
+          document.getElementById('edit_passed_date').value = data.passed_date || '';
+          document.getElementById('edit_road_level_number').value = data.road_level_number || '';
+          document.getElementById('edit_plot_number').value = data.plot_number || '';
+          document.getElementById('edit_substation_tx_count').value = data.substation_tx_count || '';
+          document.getElementById('edit_waylvb_count').value = data.waylvb_count || '';
+          document.getElementById('edit_tx_size').value = data.tx_size || '';
+        });
+      });
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  attachEditBtnHandlers();
+
+  // Submit Edit form
+  document.getElementById('editCivilPackForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const packId = document.getElementById('edit_pack_id').value;
+    const formData = new FormData(this);
+    let url = '/civil-packs/edit/' + packId + '/';
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Optionally: update the row in the table, or reload
+        location.reload();
+      } else {
+        alert(data.error || 'Update failed.');
+      }
+    });
+  });
+
+  const form = document.getElementById('civilPackForm');
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(form);
+    fetch('{% url "civil_packs" %}', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Append new row to table
+        const tbody = document.getElementById('civilPackTableBody');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="text-nowrap">${data.pack.ss_number}</td>
+          <td class="text-nowrap">${data.pack.substation_number}</td>
+          <td class="text-nowrap">${data.pack.job_code}</td>
+          <td class="text-nowrap">${data.pack.scheme_reference}</td>
+          <td class="text-nowrap">${data.pack.wayleave_number}</td>
+          <td class="text-nowrap">${data.pack.passed_date}</td>
+          <td class="text-nowrap">${data.pack.road_level_number}</td>
+          <td class="text-nowrap">${data.pack.plot_number}</td>
+          <td class="text-nowrap">${data.pack.substation_tx_count}</td>
+          <td class="text-nowrap">${data.pack.waylvb_count}</td>
+          <td class="text-nowrap">${data.pack.tx_size}</td>
+          <td class="text-center">
+            <button class="btn btn-outline-secondary btn-sm edit-btn" data-pack-id="${data.pack.id}" data-bs-toggle="modal" data-bs-target="#editCivilPackModal" title="Edit">
+              <span class="material-icons-outlined" style="font-size:1.2rem;" aria-hidden="true">edit</span>
+            </button>
+          </td>
+        `;
+        tbody.prepend(row);
+        attachEditBtnHandlers(); // Enable edit for new rows
+        // Close modal
+        var modal = bootstrap.Modal.getInstance(document.getElementById('civilPackModal'));
+        modal.hide();
+        form.reset();
+        showToast('Civil Pack added successfully!', 'success');
+      } else {
+        showToast('Error: ' + (data.error || 'Please correct the errors.'), 'danger');
+      }
+    })
+    .catch(() => showToast('Server error. Try again.', 'danger'));
+  });
+
+  // Toast function
+  window.showToast = function(message, type) {
+    let toastDiv = document.createElement('div');
+    toastDiv.className = `toast align-items-center text-bg-${type||'info'} border-0 fade show position-fixed top-0 end-0 m-3`;
+    toastDiv.setAttribute('role', 'alert');
+    toastDiv.setAttribute('aria-live', 'assertive');
+    toastDiv.setAttribute('aria-atomic', 'true');
+    toastDiv.style.zIndex = 9999;
+    toastDiv.innerHTML = `<div class='d-flex'><div class='toast-body'>${message}</div><button type='button' class='btn-close btn-close-white me-2 m-auto' data-bs-dismiss='toast' aria-label='Close'></button></div>`;
+    document.body.appendChild(toastDiv);
+    setTimeout(() => toastDiv.classList.remove('show'), 4000);
+    setTimeout(() => toastDiv.remove(), 4500);
+  }
+});
+</script>
+
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  .card {
+    border-radius: 1rem;
+  }
+  .table th, .table td {
+    vertical-align: middle;
+  }
+
+</style>
+<!-- DataTables + Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+  $(document).ready(function() {
+    $('#civilPackTable').DataTable({
+      paging: true,
+      searching: true,
+      ordering: true,
+      responsive: true,
+      lengthMenu: [5, 10, 25, 50, 100],
+      pageLength: 10,
+      language: {
+        search: "Filter table:",
+        lengthMenu: "Show _MENU_ entries"
+      }
+    });
+  });
+</script>
+{% endblock %}
